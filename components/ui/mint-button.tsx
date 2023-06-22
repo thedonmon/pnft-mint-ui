@@ -4,6 +4,7 @@ import {
   CandyMachine,
   DefaultGuardSet,
   DefaultGuardSetMintArgs,
+  fetchCandyMachine,
   fetchMintCounterFromSeeds,
   getMerkleProof,
   mintV2,
@@ -26,8 +27,6 @@ import {
   unwrapOption,
 } from "@metaplex-foundation/umi"
 import { base58 } from "@metaplex-foundation/umi/serializers"
-import { useConnection, useWallet } from "@solana/wallet-adapter-react"
-
 import { getAllowListByGuard } from "@/lib/mintsettings"
 import { useUmi } from "@/hooks/useUmi"
 import { Button } from "@/components/ui/button"
@@ -82,6 +81,32 @@ export function MintButton({
         mintArgs.solPayment = some({
           destination: solPaymentGuard.destination,
         })
+      }
+      const redeemedAmountGuard = unwrapOption(guardToUse?.redeemedAmount ?? none(), () => null)
+      if (redeemedAmountGuard) {
+        const latestCandyMachine = await fetchCandyMachine(umi, candyMachine.publicKey).catch((e) => { return null })
+        if (latestCandyMachine) {
+            const redeemedAmountValue = redeemedAmountGuard.maximum
+            const itemsRedeemed = latestCandyMachine.itemsRedeemed
+            if (itemsRedeemed >= redeemedAmountValue) {
+                toast({
+                    title: "Mint Limit Reached",
+                    description: `You have reached the mint limit of ${redeemedAmountValue} for this candy machine`,
+                    duration: 5000,
+                })
+                setDisabledCallback && setDisabledCallback(true)
+                return
+            }
+        }
+        else {
+            toast({
+                title: "Error",
+                description: `Failed to fetch candy machine`,
+                duration: 5000,
+            })
+            setDisabledCallback && setDisabledCallback(true)
+            return
+        }
       }
       const mintLimitGuard = unwrapOption(
         guardToUse?.mintLimit ?? none(),
@@ -151,7 +176,7 @@ export function MintButton({
           mint: tokenBurnGuard.mint,
         })
       }
-
+      
       const allowListGuard = unwrapOption(
         guardToUse?.allowList ?? none(),
         () => null
