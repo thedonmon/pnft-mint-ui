@@ -3,8 +3,6 @@
 import { useCallback, useEffect, useState } from "react"
 import {
   DefaultGuardSet,
-  SolPayment,
-  StartDate,
   fetchMintCounterFromSeeds,
 } from "@metaplex-foundation/mpl-candy-machine"
 import {
@@ -13,21 +11,16 @@ import {
 } from "@metaplex-foundation/mpl-token-metadata"
 import {
   SolAmount,
-  isSome,
   none,
-  some,
   unwrapOption,
 } from "@metaplex-foundation/umi"
-import { toWeb3JsPublicKey } from "@metaplex-foundation/umi-web3js-adapters"
-import { getMint } from "@solana/spl-token"
 import { useConnection, useWallet } from "@solana/wallet-adapter-react"
-import { LAMPORTS_PER_SOL, PublicKey } from "@solana/web3.js"
-import { Calculator, Timer } from "lucide-react"
+import { LAMPORTS_PER_SOL } from "@solana/web3.js"
+import { Calculator } from "lucide-react"
 
 import { cn, getRemainingTime, mergeGuards } from "@/lib/utils"
 import { useCandyMachine } from "@/hooks/useCandymachine"
 import { useUmi } from "@/hooks/useUmi"
-import { Button } from "@/components/ui/button"
 import {
   Card,
   CardContent,
@@ -70,7 +63,6 @@ export function MintCard({ className, group, ...props }: CardProps) {
   const [guardToUse, setGuardToUse] = useState<DefaultGuardSet>(
     candyGuard?.guards
   )
-  console.log(umi, candyMachine, candyGuard)
   const onMint = async (nft?: DigitalAsset, signature?: string) => {
     if (nft) {
       setNftMint(nft)
@@ -79,7 +71,7 @@ export function MintCard({ className, group, ...props }: CardProps) {
     console.log("in onmint", nft, signature)
   }
 
-  const retrieveAvailability = useCallback(async () => {
+  const checkCandyMachine = useCallback(async () => {
     if (!candyMachine) {
       return
     }
@@ -94,10 +86,10 @@ export function MintCard({ className, group, ...props }: CardProps) {
     if (guardGroup?.guards) {
       //Kepp defaults but override with group
       candyGuardToUse = mergeGuards(candyGuard?.guards, guardGroup.guards)
-      setGuardToUse(candyGuardToUse)
+      setGuardToUse({...candyGuardToUse})
       console.log(candyGuardToUse)
     } else {
-      setGuardToUse(candyGuardToUse)
+      setGuardToUse({...candyGuardToUse})
     }
 
     console.log(candyGuardToUse)
@@ -115,7 +107,7 @@ export function MintCard({ className, group, ...props }: CardProps) {
     }
 
     const mintLimitGuard = unwrapOption(
-      guardToUse?.mintLimit ?? none(),
+        candyGuardToUse?.mintLimit ?? none(),
       () => null
     )
     if (mintLimitGuard) {
@@ -141,7 +133,7 @@ export function MintCard({ className, group, ...props }: CardProps) {
     }
 
     const solPaymentGuard = unwrapOption(
-      candyGuardToUse.solPayment ?? none(),
+      candyGuardToUse?.solPayment ?? none(),
       () => null
     )
 
@@ -154,7 +146,7 @@ export function MintCard({ className, group, ...props }: CardProps) {
       })
     }
     const tokenPaymentGuard = unwrapOption(
-      candyGuardToUse.tokenPayment ?? none(),
+      candyGuardToUse?.tokenPayment ?? none(),
       () => null
     )
     if (tokenPaymentGuard) {
@@ -174,11 +166,12 @@ export function MintCard({ className, group, ...props }: CardProps) {
     if (remaining > 0) {
       setDisableMint(false)
     }
-  }, [candyMachine, guardToUse, candyGuard, group, umi, toast])
+  }, [candyMachine, guardToUse, candyGuard, group])
 
   useEffect(() => {
-    retrieveAvailability()
-  }, [candyMachine, candyGuard, wallet, retrieveAvailability])
+    checkCandyMachine()
+    //eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [candyMachine, candyGuard, wallet])
 
   return (
     <Card
