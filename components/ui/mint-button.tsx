@@ -42,6 +42,8 @@ type MintButtonProps = React.ComponentProps<typeof Button> & {
   thirdPartySigner?: KeypairSigner
   nftGateMint?: PublicKey
   onMintCallback?: (mint?: DigitalAsset, signature?: string) => void
+  setMessageCallback?: (message?: string) => void
+  setDisabledCallback?: (disabled?: boolean) => void
 }
 
 export function MintButton({
@@ -53,13 +55,14 @@ export function MintButton({
   thirdPartySigner,
   onMintCallback,
   nftGateMint,
+  setDisabledCallback,
+  setMessageCallback,
   ...props
 }: MintButtonProps) {
   const { toast } = useToast()
   const umi = useUmi()
   const { wallet, publicKey, connected, signAllTransactions } = useWallet()
   const { connection } = useConnection()
-  const [disableMint, setDisableMint] = useState(false)
   const [loading, setLoading] = useState(false)
 
   const mintBtnHandler = async () => {
@@ -72,7 +75,7 @@ export function MintButton({
 
       const mintArgs: Partial<DefaultGuardSetMintArgs> = {}
       console.log(guardToUse)
-      //TODO: Implement rest of guard logic
+      //TODO: Implement rest of guard logic NFT BURN, Token Burn, etc 
       const solPaymentGuard = unwrapOption(
         guardToUse?.solPayment ?? none(),
         () => null
@@ -102,7 +105,7 @@ export function MintButton({
               description: `You have reached the mint limit of ${mintLimitGuard.limit} for this NFT.`,
               duration: 5000,
             })
-            setDisableMint(true)
+            setDisabledCallback && setDisabledCallback(true)
             return
           }
         }
@@ -228,7 +231,6 @@ export function MintButton({
       className={className}
       onClick={mintBtnHandler}
       {...props}
-      disabled={disableMint}
     >
       {loading ? "Minting..." : "Mint"}
     </Button>

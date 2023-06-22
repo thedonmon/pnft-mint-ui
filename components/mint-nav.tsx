@@ -23,6 +23,11 @@ const mintTiers = [
     label: "late",
     href: "/mint/late",
   },
+  {
+    name: "Token Mint",
+    label: "token",
+    href: "/mint/token",
+  },
 ]
 
 interface MintNavProps extends React.HTMLAttributes<HTMLDivElement> {}
