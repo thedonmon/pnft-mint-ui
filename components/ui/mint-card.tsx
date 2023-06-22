@@ -75,9 +75,17 @@ export function MintCard({ className, group, ...props }: CardProps) {
   }, [disableMint])
 
   const checkCandyMachine = useCallback(async () => {
+    if (!connected || !publicKey) {
+        toast({
+            title: "Wallet not connected",
+            description: "Please connect wallet to continue",
+        })
+        return
+    }
     if (!candyMachine) {
       return
     }
+    
     // Get counts
     setCountTotal(candyMachine.itemsLoaded)
     setCountMinted(Number(candyMachine.itemsRedeemed))
@@ -216,12 +224,12 @@ export function MintCard({ className, group, ...props }: CardProps) {
     if (remaining > 0) {
       setDisableMint(false)
     }
-  }, [candyMachine, guardToUse, candyGuard, group])
+  }, [candyMachine, guardToUse, candyGuard, group, connected, wallet])
 
   useEffect(() => {
     checkCandyMachine()
     //eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [candyMachine, candyGuard, wallet])
+  }, [candyMachine, candyGuard, wallet, connected])
 
   return (
     <Card
