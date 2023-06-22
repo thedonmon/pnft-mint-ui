@@ -33,7 +33,10 @@ export const useCandyMachine = (
         const cm = await fetchCandyMachine(umiParam, candyMachinePublicKey)
         setCandyMachine(cm)
 
-        const cg = await fetchCandyGuard(umiParam, cm?.mintAuthority ?? candyGuardMintAuthority)
+        const cg = await fetchCandyGuard(
+          umiParam,
+          cm?.mintAuthority ?? candyGuardMintAuthority
+        )
         setCandyGuard(cg)
       } catch (e) {
         if (e instanceof Error) {
