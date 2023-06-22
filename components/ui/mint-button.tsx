@@ -27,6 +27,7 @@ import {
   unwrapOption,
 } from "@metaplex-foundation/umi"
 import { base58 } from "@metaplex-foundation/umi/serializers"
+
 import { getAllowListByGuard } from "@/lib/mintsettings"
 import { useUmi } from "@/hooks/useUmi"
 import { Button } from "@/components/ui/button"
@@ -82,30 +83,37 @@ export function MintButton({
           destination: solPaymentGuard.destination,
         })
       }
-      const redeemedAmountGuard = unwrapOption(guardToUse?.redeemedAmount ?? none(), () => null)
+      const redeemedAmountGuard = unwrapOption(
+        guardToUse?.redeemedAmount ?? none(),
+        () => null
+      )
       if (redeemedAmountGuard) {
-        const latestCandyMachine = await fetchCandyMachine(umi, candyMachine.publicKey).catch((e) => { return null })
+        const latestCandyMachine = await fetchCandyMachine(
+          umi,
+          candyMachine.publicKey
+        ).catch((e) => {
+          return null
+        })
         if (latestCandyMachine) {
-            const redeemedAmountValue = redeemedAmountGuard.maximum
-            const itemsRedeemed = latestCandyMachine.itemsRedeemed
-            if (itemsRedeemed >= redeemedAmountValue) {
-                toast({
-                    title: "Redeemed Amount Reached",
-                    description: `A maximum of ${redeemedAmountValue} mints could be redeemed for this group. ${itemsRedeemed} have already been redeemed.`,
-                    duration: 5000,
-                })
-                setDisabledCallback && setDisabledCallback(true)
-                return
-            }
-        }
-        else {
+          const redeemedAmountValue = redeemedAmountGuard.maximum
+          const itemsRedeemed = latestCandyMachine.itemsRedeemed
+          if (itemsRedeemed >= redeemedAmountValue) {
             toast({
-                title: "Error",
-                description: `Failed to fetch candy machine`,
-                duration: 5000,
+              title: "Redeemed Amount Reached",
+              description: `A maximum of ${redeemedAmountValue} mints could be redeemed for this group. ${itemsRedeemed} have already been redeemed.`,
+              duration: 5000,
             })
             setDisabledCallback && setDisabledCallback(true)
             return
+          }
+        } else {
+          toast({
+            title: "Error",
+            description: `Failed to fetch candy machine`,
+            duration: 5000,
+          })
+          setDisabledCallback && setDisabledCallback(true)
+          return
         }
       }
       const mintLimitGuard = unwrapOption(
@@ -162,7 +170,10 @@ export function MintButton({
         })
       }
 
-      const token2022Payment = unwrapOption(guardToUse?.token2022Payment ?? none(), () => null)
+      const token2022Payment = unwrapOption(
+        guardToUse?.token2022Payment ?? none(),
+        () => null
+      )
       if (token2022Payment) {
         mintArgs.token2022Payment = some({
           mint: token2022Payment.mint,
@@ -170,13 +181,16 @@ export function MintButton({
         })
       }
 
-      const tokenBurnGuard = unwrapOption(guardToUse?.tokenBurn ?? none(), () => null)
+      const tokenBurnGuard = unwrapOption(
+        guardToUse?.tokenBurn ?? none(),
+        () => null
+      )
       if (tokenBurnGuard) {
         mintArgs.tokenBurn = some({
           mint: tokenBurnGuard.mint,
         })
       }
-      
+
       const allowListGuard = unwrapOption(
         guardToUse?.allowList ?? none(),
         () => null
@@ -255,11 +269,7 @@ export function MintButton({
   }
 
   return (
-    <Button
-      className={className}
-      onClick={mintBtnHandler}
-      {...props}
-    >
+    <Button className={className} onClick={mintBtnHandler} {...props}>
       {loading ? "Minting..." : "Mint"}
     </Button>
   )

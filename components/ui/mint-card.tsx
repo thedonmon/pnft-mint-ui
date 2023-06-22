@@ -9,7 +9,13 @@ import {
   DigitalAsset,
   safeFetchMetadata,
 } from "@metaplex-foundation/mpl-token-metadata"
+import { SPL_SYSTEM_PROGRAM_ID } from "@metaplex-foundation/mpl-toolbox"
 import { SolAmount, none, unwrapOption } from "@metaplex-foundation/umi"
+import { toWeb3JsPublicKey } from "@metaplex-foundation/umi-web3js-adapters"
+import {
+  TOKEN_2022_PROGRAM_ID,
+  getAssociatedTokenAddressSync,
+} from "@solana/spl-token"
 import { useConnection, useWallet } from "@solana/wallet-adapter-react"
 import { LAMPORTS_PER_SOL } from "@solana/web3.js"
 import { Calculator } from "lucide-react"
@@ -30,9 +36,6 @@ import { Countdown } from "./countdown"
 import { MintButton } from "./mint-button"
 import { MintProgress } from "./mint-progress"
 import { useToast } from "./use-toast"
-import { TOKEN_2022_PROGRAM_ID, getAssociatedTokenAddressSync } from "@solana/spl-token"
-import { toWeb3JsPublicKey } from '@metaplex-foundation/umi-web3js-adapters';
-import { SPL_SYSTEM_PROGRAM_ID } from "@metaplex-foundation/mpl-toolbox"
 
 type CardProps = React.ComponentProps<typeof Card> & {
   group?: string
@@ -70,28 +73,40 @@ export function MintCard({ className, group, ...props }: CardProps) {
     }
     console.log("in onmint", nft, signature)
   }
-  const setDisabledCallback = useCallback((disabled = false) => {
-    setDisableMint(disabled)
-  }, [disableMint])
+  const setDisabledCallback = useCallback(
+    (disabled = false) => {
+      setDisableMint(disabled)
+    },
+    [disableMint]
+  )
 
   const checkCandyMachine = useCallback(async () => {
     if (!connected || !publicKey) {
-        toast({
-            title: "Wallet not connected",
-            description: "Please connect wallet to continue",
-        })
-        return
+      toast({
+        title: "Wallet not connected",
+        description: "Please connect wallet to continue",
+      })
+      return
     }
     if (!candyMachine) {
       return
     }
-    
+
     // Get counts
     setCountTotal(candyMachine.itemsLoaded)
     setCountMinted(Number(candyMachine.itemsRedeemed))
     const remaining =
       candyMachine.itemsLoaded - Number(candyMachine.itemsRedeemed)
     setCountRemaining(remaining)
+    if (remaining <= 0) {
+      toast({
+        title: "Sold Out",
+        description: "All NFTs have been minted",
+      })
+      setDisableMint(true)
+      setMessage("Sold Out")
+      return
+    }
     const guardGroup = candyGuard?.groups?.find((g) => g?.label === group)
     let candyGuardToUse = candyGuard?.guards
     if (guardGroup?.guards) {
@@ -160,7 +175,10 @@ export function MintCard({ className, group, ...props }: CardProps) {
         amount: solCost,
         name: "SOL",
       })
-      if (solBalance === 0  || solPaymentGuard.lamports.basisPoints > balance.basisPoints) {
+      if (
+        solBalance === 0 ||
+        solPaymentGuard.lamports.basisPoints > balance.basisPoints
+      ) {
         toast({
           title: "Insufficient Balance",
           description: `You need at least ${cost.amount} SOL to mint this NFT.`,
@@ -182,45 +200,70 @@ export function MintCard({ className, group, ...props }: CardProps) {
         amount: Number(tokenCost),
         name: meta?.name || "Token",
       })
-      const tokenAddress = getAssociatedTokenAddressSync(toWeb3JsPublicKey(tokenMint), toWeb3JsPublicKey(umi.identity.publicKey))
-      const tokenAccount = await connection.getTokenAccountBalance(tokenAddress).catch((e) => { return null })
-      console.log('TokenAccount', tokenAddress.toBase58(), tokenAccount)
-        if (!tokenAccount || (tokenAccount.value && (tokenAccount.value?.uiAmount ?? 0) < Number(tokenPaymentGuard.amount))) {
-            toast({
-                title: "Insufficient Balance",
-                description: `You need at least ${tokenPaymentGuard.amount} ${meta?.name || "token"} to mint this NFT.`,
-                duration: 5000,
-            })
-            setDisableMint(true)
-            return
-        }
+      const tokenAddress = getAssociatedTokenAddressSync(
+        toWeb3JsPublicKey(tokenMint),
+        toWeb3JsPublicKey(umi.identity.publicKey)
+      )
+      const tokenAccount = await connection
+        .getTokenAccountBalance(tokenAddress)
+        .catch((e) => {
+          return null
+        })
+      console.log("TokenAccount", tokenAddress.toBase58(), tokenAccount)
+      if (
+        !tokenAccount ||
+        (tokenAccount.value &&
+          (tokenAccount.value?.uiAmount ?? 0) <
+            Number(tokenPaymentGuard.amount))
+      ) {
+        toast({
+          title: "Insufficient Balance",
+          description: `You need at least ${tokenPaymentGuard.amount} ${
+            meta?.name || "token"
+          } to mint this NFT.`,
+          duration: 5000,
+        })
+        setDisableMint(true)
+        return
+      }
     }
     const token2022PaymentGuard = unwrapOption(
-        candyGuardToUse?.token2022Payment ?? none(),
-        () => null
+      candyGuardToUse?.token2022Payment ?? none(),
+      () => null
+    )
+    if (token2022PaymentGuard) {
+      const tokenCost = token2022PaymentGuard.amount
+      const tokenMint = token2022PaymentGuard.mint
+      const meta = await safeFetchMetadata(umi, tokenMint)
+      setCost({
+        amount: Number(tokenCost),
+        name: meta?.name || "Token",
+      })
+      const tokenAddress = getAssociatedTokenAddressSync(
+        toWeb3JsPublicKey(tokenMint),
+        toWeb3JsPublicKey(umi.identity.publicKey),
+        undefined,
+        TOKEN_2022_PROGRAM_ID
       )
-      if (token2022PaymentGuard) {
-        const tokenCost = token2022PaymentGuard.amount
-        const tokenMint = token2022PaymentGuard.mint
-        const meta = await safeFetchMetadata(umi, tokenMint)
-        setCost({
-          amount: Number(tokenCost),
-          name: meta?.name || "Token",
+      //TODO Handle fetch token2022 balance
+      const tokenAccount = await connection
+        .getAccountInfo(tokenAddress)
+        .catch((e) => {
+          return null
         })
-        const tokenAddress = getAssociatedTokenAddressSync(toWeb3JsPublicKey(tokenMint), toWeb3JsPublicKey(umi.identity.publicKey), undefined, TOKEN_2022_PROGRAM_ID)
-        //TODO Handle fetch token2022 balance
-        const tokenAccount = await connection.getAccountInfo(tokenAddress).catch((e) => { return null })
-            if (!tokenAccount) {
-                toast({
-                    title: "Insufficient Balance",
-                    description: `You need at least ${token2022PaymentGuard.amount} ${meta?.name || "token"} to mint this NFT.`,
-                    duration: 5000,
-                })
-                setDisableMint(true)
-                return
-            }
+      if (!tokenAccount) {
+        toast({
+          title: "Insufficient Balance",
+          description: `You need at least ${token2022PaymentGuard.amount} ${
+            meta?.name || "token"
+          } to mint this NFT.`,
+          duration: 5000,
+        })
+        setDisableMint(true)
+        return
       }
-      
+    }
+
     if (remaining > 0) {
       setDisableMint(false)
     }
@@ -281,6 +324,13 @@ export function MintCard({ className, group, ...props }: CardProps) {
               <p className="text-sm font-medium leading-none">
                 Limit {mintLimit} per wallet
               </p>
+            </div>
+          </div>
+        ) : null}
+        {message ? (
+          <div className=" flex items-center space-x-4 p-2">
+            <div className="flex-1 space-y-1">
+              <p className="text-sm font-medium leading-none">{message}</p>
             </div>
           </div>
         ) : null}

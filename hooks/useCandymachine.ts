@@ -6,12 +6,7 @@ import {
   fetchCandyGuard,
   fetchCandyMachine,
 } from "@metaplex-foundation/mpl-candy-machine"
-import { PublicKey, Umi, publicKey } from "@metaplex-foundation/umi"
-import {
-  toWeb3JsPublicKey,
-  toWeb3JsTransaction,
-} from "@metaplex-foundation/umi-web3js-adapters"
-import { useConnection } from "@solana/wallet-adapter-react"
+import { Umi, publicKey } from "@metaplex-foundation/umi"
 
 export const useCandyMachine = (
   umi: Umi
@@ -19,6 +14,7 @@ export const useCandyMachine = (
   candyMachine: CandyMachine
   candyGuard: CandyGuard<DefaultGuardSet>
   fetchCM: (umi: Umi) => Promise<void>
+  error: Error | null
 } => {
   const candyMachinePublicKey = publicKey(
     process.env.NEXT_PUBLIC_CANDYMACHINE_PK || ""
@@ -29,45 +25,40 @@ export const useCandyMachine = (
   const [candyMachine, setCandyMachine] = useState<CandyMachine | null>(null)
   const [candyGuard, setCandyGuard] =
     useState<CandyGuard<DefaultGuardSet> | null>(null)
-  useEffect(() => {
-    const fetchCandyMachineAsync = async (
-      umi: Umi,
-      candyMachinePublicKey: PublicKey
-    ) => {
-      const candyMachine = await fetchCandyMachine(umi, candyMachinePublicKey)
-      setCandyMachine(candyMachine)
-      await fetchCandyGuard(umi, candyMachine.mintAuthority)
-        .then(setCandyGuard)
-        .catch((e) => {
-          console.log(e)
-          return null
-        })
-    }
-    if (umi && candyMachinePublicKey) {
-      fetchCandyMachineAsync(umi, candyMachinePublicKey)
-    }
-  }, [umi, candyMachinePublicKey])
-  const fetchCM = useCallback(
+  const [error, setError] = useState<Error | null>(null)
+
+  const fetchData = useCallback(
     async (umiParam: Umi) => {
-      console.log("fetchCM", umiParam)
-      await fetchCandyMachine(umiParam, candyMachinePublicKey)
-        .then(setCandyMachine)
-        .catch((e) => {
+      try {
+        const cm = await fetchCandyMachine(umiParam, candyMachinePublicKey)
+        setCandyMachine(cm)
+
+        const cg = await fetchCandyGuard(umiParam, cm?.mintAuthority ?? candyGuardMintAuthority)
+        setCandyGuard(cg)
+      } catch (e) {
+        if (e instanceof Error) {
           console.log(e)
-        })
-      await fetchCandyGuard(umiParam, candyGuardMintAuthority)
-        .then(setCandyGuard)
-        .catch((e) => {
-          console.log(e)
-          return null
-        })
+          setError(e)
+        } else {
+          // e is something else, possibly 'unknown'
+          console.error(e)
+          setError(new Error("An unexpected error occurred."))
+        }
+      }
     },
-    [umi]
+    [candyMachinePublicKey]
   )
+
+  useEffect(() => {
+    if (umi && candyMachinePublicKey) {
+      fetchData(umi)
+    }
+  }, [umi, candyMachinePublicKey, fetchData])
 
   return {
     candyMachine: candyMachine as CandyMachine,
     candyGuard: candyGuard as CandyGuard<DefaultGuardSet>,
-    fetchCM,
+    fetchCM: fetchData,
+    error,
   }
 }
