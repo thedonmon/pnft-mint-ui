@@ -61,8 +61,6 @@ export function MintButton({
 }: MintButtonProps) {
   const { toast } = useToast()
   const umi = useUmi()
-  const { wallet, publicKey, connected, signAllTransactions } = useWallet()
-  const { connection } = useConnection()
   const [loading, setLoading] = useState(false)
 
   const mintBtnHandler = async () => {
@@ -75,7 +73,7 @@ export function MintButton({
 
       const mintArgs: Partial<DefaultGuardSetMintArgs> = {}
       console.log(guardToUse)
-      //TODO: Implement rest of guard logic NFT BURN, Token Burn, etc 
+      //TODO: Implement rest of guard logic NFT BURN, NFT Payment, FreezeSolPayment FreezeTokenPayment etc 
       const solPaymentGuard = unwrapOption(
         guardToUse?.solPayment ?? none(),
         () => null
@@ -144,6 +142,13 @@ export function MintButton({
         mintArgs.token2022Payment = some({
           mint: token2022Payment.mint,
           destinationAta: token2022Payment.destinationAta,
+        })
+      }
+
+      const tokenBurnGuard = unwrapOption(guardToUse?.tokenBurn ?? none(), () => null)
+      if (tokenBurnGuard) {
+        mintArgs.tokenBurn = some({
+          mint: tokenBurnGuard.mint,
         })
       }
 
