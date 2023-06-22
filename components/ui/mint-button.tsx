@@ -63,7 +63,7 @@ export function MintButton({
   const [loading, setLoading] = useState(false)
 
   const mintBtnHandler = async () => {
-    if (!candyMachine || !candyGuard) {
+    if (!candyMachine) {
       return
     }
 
@@ -72,7 +72,7 @@ export function MintButton({
 
       const mintArgs: Partial<DefaultGuardSetMintArgs> = {}
       console.log(guardToUse)
-      //TODO: Implement rest of guard logic NFT BURN, NFT Payment, FreezeSolPayment FreezeTokenPayment etc 
+      //TODO: Implement rest of guard logic NFT BURN, NFT Payment, FreezeSolPayment FreezeTokenPayment etc also consolidate this logic, very cluttered
       const solPaymentGuard = unwrapOption(
         guardToUse?.solPayment ?? none(),
         () => null
@@ -181,11 +181,11 @@ export function MintButton({
         guardToUse?.allowList ?? none(),
         () => null
       )
-      let routeIx: TransactionBuilder | null = null
+      let routeBuilder: TransactionBuilder | null = null
       if (allowListGuard) {
         const allowlist = getAllowListByGuard(group)
         if (allowlist) {
-          routeIx = route(umi, {
+          routeBuilder = route(umi, {
             candyMachine: candyMachine.publicKey,
             candyGuard: candyGuard.publicKey,
             guard: "allowList",
@@ -205,7 +205,7 @@ export function MintButton({
         }
       }
       const nftSigner = generateSigner(umi)
-      const mintV2Ix = mintV2(umi, {
+      const mintV2Builder = mintV2(umi, {
         candyMachine: candyMachine.publicKey,
         collectionMint: candyMachine.collectionMint,
         collectionUpdateAuthority: candyMachine.authority,
@@ -219,12 +219,12 @@ export function MintButton({
 
       let tx = transactionBuilder()
         .add(setComputeUnitLimit(umi, { units: 600_000 }))
-        .add(mintV2Ix)
-      if (routeIx) {
+        .add(mintV2Builder)
+      if (routeBuilder) {
         //Make sure route ix comes first
-        tx = routeIx
+        tx = routeBuilder
           .add(setComputeUnitLimit(umi, { units: 600_000 }))
-          .add(mintV2Ix)
+          .add(mintV2Builder)
       }
       const { signature } = await tx.sendAndConfirm(umi, {
         confirm: { commitment: "finalized" },
