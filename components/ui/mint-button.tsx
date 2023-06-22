@@ -135,6 +135,15 @@ export function MintButton({
           destinationAta: tokenPayment.destinationAta,
         })
       }
+
+      const token2022Payment = unwrapOption(guardToUse?.token2022Payment ?? none(), () => null)
+      if (token2022Payment) {
+        mintArgs.token2022Payment = some({
+          mint: token2022Payment.mint,
+          destinationAta: token2022Payment.destinationAta,
+        })
+      }
+
       const allowListGuard = unwrapOption(
         guardToUse?.allowList ?? none(),
         () => null
