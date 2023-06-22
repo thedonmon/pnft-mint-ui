@@ -247,8 +247,6 @@ export function MintButton({
           description: `You minted ${nft?.metadata?.name}!`,
         })
       }
-      //   setMintCreated(nftSigner.publicKey);
-      //   setMintMsg("Mint was successful!");
     } catch (err: any) {
       console.error(err)
     } finally {
