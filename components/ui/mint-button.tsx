@@ -90,8 +90,8 @@ export function MintButton({
             const itemsRedeemed = latestCandyMachine.itemsRedeemed
             if (itemsRedeemed >= redeemedAmountValue) {
                 toast({
-                    title: "Mint Limit Reached",
-                    description: `You have reached the mint limit of ${redeemedAmountValue} for this candy machine`,
+                    title: "Redeemed Amount Reached",
+                    description: `A maximum of ${redeemedAmountValue} mints could be redeemed for this group. ${itemsRedeemed} have already been redeemed.`,
                     duration: 5000,
                 })
                 setDisabledCallback && setDisabledCallback(true)
