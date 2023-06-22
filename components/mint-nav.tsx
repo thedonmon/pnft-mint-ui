@@ -15,7 +15,13 @@ const mintTiers = [
   },
   {
     name: "Public Mint",
+    label: "public",
     href: "/mint/public",
+  },
+  {
+    name: "WL1 Mint",
+    label: "late",
+    href: "/mint/late",
   },
 ]
 

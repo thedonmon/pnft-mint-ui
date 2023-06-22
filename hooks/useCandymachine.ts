@@ -7,7 +7,10 @@ import {
   fetchCandyMachine,
 } from "@metaplex-foundation/mpl-candy-machine"
 import { PublicKey, Umi, publicKey } from "@metaplex-foundation/umi"
-import { toWeb3JsPublicKey } from "@metaplex-foundation/umi-web3js-adapters"
+import {
+  toWeb3JsPublicKey,
+  toWeb3JsTransaction,
+} from "@metaplex-foundation/umi-web3js-adapters"
 import { useConnection } from "@solana/wallet-adapter-react"
 
 export const useCandyMachine = (

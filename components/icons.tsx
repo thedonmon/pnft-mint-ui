@@ -1,9 +1,9 @@
 import {
+  Candy,
   LucideProps,
   Moon,
   SunMedium,
   Twitter,
-  Candy,
   type Icon as LucideIcon,
 } from "lucide-react"
 

@@ -26,7 +26,7 @@ import {
   unwrapOption,
 } from "@metaplex-foundation/umi"
 import { base58 } from "@metaplex-foundation/umi/serializers"
-import { useWallet } from "@solana/wallet-adapter-react"
+import { useConnection, useWallet } from "@solana/wallet-adapter-react"
 
 import { getAllowListByGuard } from "@/lib/mintsettings"
 import { useUmi } from "@/hooks/useUmi"
@@ -57,8 +57,9 @@ export function MintButton({
 }: MintButtonProps) {
   const { toast } = useToast()
   const umi = useUmi()
-  const { wallet, publicKey, connected } = useWallet()
-  const [disableMint, setDisableMint] = useState(true)
+  const { wallet, publicKey, connected, signAllTransactions } = useWallet()
+  const { connection } = useConnection()
+  const [disableMint, setDisableMint] = useState(false)
   const [loading, setLoading] = useState(false)
 
   const mintBtnHandler = async () => {
@@ -68,7 +69,6 @@ export function MintButton({
 
     try {
       setLoading(true)
-      const nftSigner = generateSigner(umi)
 
       const mintArgs: Partial<DefaultGuardSetMintArgs> = {}
       console.log(guardToUse)
@@ -92,6 +92,8 @@ export function MintButton({
           user: umi.identity.publicKey,
           candyMachine: candyMachine.publicKey,
           candyGuard: candyGuard.publicKey,
+        }).catch((e) => {
+          return null
         })
         if (mitLimitCounter) {
           if (mitLimitCounter.count >= mintLimitGuard.limit) {
@@ -143,7 +145,9 @@ export function MintButton({
         if (allowlist) {
           routeIx = route(umi, {
             candyMachine: candyMachine.publicKey,
+            candyGuard: candyGuard.publicKey,
             guard: "allowList",
+            group: group ? some(group) : undefined,
             routeArgs: {
               path: "proof",
               merkleRoot: allowListGuard.merkleRoot,
@@ -153,27 +157,33 @@ export function MintButton({
               ),
             },
           })
+          mintArgs.allowList = some({
+            merkleRoot: allowListGuard.merkleRoot,
+          })
         }
       }
-
+      const nftSigner = generateSigner(umi)
       const mintV2Ix = mintV2(umi, {
         candyMachine: candyMachine.publicKey,
         collectionMint: candyMachine.collectionMint,
         collectionUpdateAuthority: candyMachine.authority,
         nftMint: nftSigner,
+        minter: umi.identity,
         candyGuard: candyGuard?.publicKey,
         mintArgs: mintArgs,
         group: group ? group : undefined,
         tokenStandard: TokenStandard.ProgrammableNonFungible,
       })
 
-      const tx = transactionBuilder()
+      let tx = transactionBuilder()
         .add(setComputeUnitLimit(umi, { units: 600_000 }))
         .add(mintV2Ix)
       if (routeIx) {
-        tx.add(routeIx)
+        //Make sure route ix comes first
+        tx = routeIx
+          .add(setComputeUnitLimit(umi, { units: 600_000 }))
+          .add(mintV2Ix)
       }
-
       const { signature } = await tx.sendAndConfirm(umi, {
         confirm: { commitment: "finalized" },
         send: {

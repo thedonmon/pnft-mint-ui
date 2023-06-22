@@ -9,11 +9,7 @@ import {
   DigitalAsset,
   safeFetchMetadata,
 } from "@metaplex-foundation/mpl-token-metadata"
-import {
-  SolAmount,
-  none,
-  unwrapOption,
-} from "@metaplex-foundation/umi"
+import { SolAmount, none, unwrapOption } from "@metaplex-foundation/umi"
 import { useConnection, useWallet } from "@solana/wallet-adapter-react"
 import { LAMPORTS_PER_SOL } from "@solana/web3.js"
 import { Calculator } from "lucide-react"
@@ -84,12 +80,12 @@ export function MintCard({ className, group, ...props }: CardProps) {
     const guardGroup = candyGuard?.groups?.find((g) => g?.label === group)
     let candyGuardToUse = candyGuard?.guards
     if (guardGroup?.guards) {
-      //Kepp defaults but override with group
+      //Keep defaults but override with group
       candyGuardToUse = mergeGuards(candyGuard?.guards, guardGroup.guards)
-      setGuardToUse({...candyGuardToUse})
+      setGuardToUse({ ...candyGuardToUse })
       console.log(candyGuardToUse)
     } else {
-      setGuardToUse({...candyGuardToUse})
+      setGuardToUse({ ...candyGuardToUse })
     }
 
     console.log(candyGuardToUse)
@@ -107,7 +103,7 @@ export function MintCard({ className, group, ...props }: CardProps) {
     }
 
     const mintLimitGuard = unwrapOption(
-        candyGuardToUse?.mintLimit ?? none(),
+      candyGuardToUse?.mintLimit ?? none(),
       () => null
     )
     if (mintLimitGuard) {
@@ -118,6 +114,8 @@ export function MintCard({ className, group, ...props }: CardProps) {
         user: umi.identity.publicKey,
         candyMachine: candyMachine.publicKey,
         candyGuard: candyGuard.publicKey,
+      }).catch((e) => {
+        return null
       })
       if (mitLimitCounter) {
         if (mitLimitCounter.count >= mintLimitGuard.limit) {
@@ -139,7 +137,7 @@ export function MintCard({ className, group, ...props }: CardProps) {
 
     if (solPaymentGuard) {
       const lamports: SolAmount = solPaymentGuard.lamports
-      const solCost = Number(lamports.basisPoints) * LAMPORTS_PER_SOL
+      const solCost = Number(lamports.basisPoints) / LAMPORTS_PER_SOL
       setCost({
         amount: solCost,
         name: "SOL",
@@ -176,7 +174,7 @@ export function MintCard({ className, group, ...props }: CardProps) {
   return (
     <Card
       className={cn(
-        "w-full sm:w-3/4 md:w-1/2 lg:w-1/3 xl:w-[400px]",
+        "w-full sm:w-3/4 md:w-1/2 lg:w-1/3 xl:w-[500px]",
         className
       )}
       {...props}
