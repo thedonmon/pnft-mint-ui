@@ -22,7 +22,7 @@ export default function GroupPage() {
       <MintNav />
       <div className="flex flex-col gap-4 md:flex-row">
         <div
-          className="h-100 hidden w-1/2 bg-cover bg-center md:block"
+          className="h-100 hidden w-1/2 rounded-xl bg-cover bg-center md:block"
           style={{
             backgroundImage:
               "url(https://images.unsplash.com/photo-1590069261209-f8e9b8642343?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=1376&q=80)",
