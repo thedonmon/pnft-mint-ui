@@ -68,10 +68,10 @@ export function MintButton({
     if (!candyMachine) {
       return
     }
+    const nfts: PublicKey[] = [];
     for (let i = 0; i < mintAmount; i++) {
       try {
         setLoading(true)
-
         const mintArgs: Partial<DefaultGuardSetMintArgs> = {}
         console.log(guardToUse)
         //TODO: Implement rest of guard logic NFT BURN, NFT Payment, FreezeSolPayment FreezeTokenPayment etc also consolidate this logic, very cluttered
@@ -219,6 +219,7 @@ export function MintButton({
             })
           }
         }
+        //Todo: for multimint, probably move these to their own txns
         const nftSigner = generateSigner(umi)
         const mintV2Builder = mintV2(umi, {
           candyMachine: candyMachine.publicKey,
@@ -241,13 +242,15 @@ export function MintButton({
             .add(setComputeUnitLimit(umi, { units: 600_000 }))
             .add(mintV2Builder)
         }
+        //TODO figure out who to sign multiple txns with umi... should be building up multiple txns then sending them outside the loop
         const { signature } = await tx.sendAndConfirm(umi, {
           confirm: { commitment: "finalized" },
           send: {
             skipPreflight: true,
           },
         })
-
+        //Todo move this logic
+        nfts.push(nftSigner.publicKey)
         const nft = await fetchDigitalAsset(umi, nftSigner.publicKey).catch(
           (err) => {
             console.log(err)
