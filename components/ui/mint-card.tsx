@@ -13,6 +13,7 @@ import { SPL_SYSTEM_PROGRAM_ID } from "@metaplex-foundation/mpl-toolbox"
 import { SolAmount, none, unwrapOption } from "@metaplex-foundation/umi"
 import { toWeb3JsPublicKey } from "@metaplex-foundation/umi-web3js-adapters"
 import {
+  ASSOCIATED_TOKEN_PROGRAM_ID,
   TOKEN_2022_PROGRAM_ID,
   getAssociatedTokenAddressSync,
 } from "@solana/spl-token"
@@ -20,7 +21,7 @@ import { useConnection, useWallet } from "@solana/wallet-adapter-react"
 import { LAMPORTS_PER_SOL } from "@solana/web3.js"
 import { Calculator } from "lucide-react"
 
-import { cn, getRemainingTime, mergeGuards } from "@/lib/utils"
+import { cn, getRemainingTime, mergeGuards, shortenKey } from "@/lib/utils"
 import { useCandyMachine } from "@/hooks/useCandymachine"
 import { useUmi } from "@/hooks/useUmi"
 import {
@@ -198,7 +199,7 @@ export function MintCard({ className, group, ...props }: CardProps) {
       const meta = await safeFetchMetadata(umi, tokenMint)
       setCost({
         amount: Number(tokenCost),
-        name: meta?.name || "Token",
+        name: meta?.name || `Token ${shortenKey(tokenMint)}`,
       })
       const tokenAddress = getAssociatedTokenAddressSync(
         toWeb3JsPublicKey(tokenMint),
@@ -209,7 +210,7 @@ export function MintCard({ className, group, ...props }: CardProps) {
         .catch((e) => {
           return null
         })
-      console.log("TokenAccount", tokenAddress.toBase58(), tokenAccount)
+
       if (
         !tokenAccount ||
         (tokenAccount.value &&
@@ -239,23 +240,35 @@ export function MintCard({ className, group, ...props }: CardProps) {
         amount: Number(tokenCost),
         name: meta?.name || "Token",
       })
-      const tokenAddress = getAssociatedTokenAddressSync(
-        toWeb3JsPublicKey(tokenMint),
-        toWeb3JsPublicKey(umi.identity.publicKey),
-        undefined,
-        TOKEN_2022_PROGRAM_ID
-      )
-      //TODO Handle fetch token2022 balance
-      const tokenAccount = await connection
-        .getAccountInfo(tokenAddress)
-        .catch((e) => {
-          return null
-        })
-      if (!tokenAccount) {
+      // const tokenAddress = getAssociatedTokenAddressSync(
+      //   toWeb3JsPublicKey(tokenMint),
+      //   toWeb3JsPublicKey(umi.identity.publicKey),
+      //   undefined,
+      //   TOKEN_2022_PROGRAM_ID,
+      //   ASSOCIATED_TOKEN_PROGRAM_ID
+      // )
+      try {
+        const parsedTokenAccount =
+          await connection.getParsedTokenAccountsByOwner(
+            toWeb3JsPublicKey(umi.identity.publicKey),
+            { mint: toWeb3JsPublicKey(tokenMint) }
+          )
+
+        const filteredTokenAccount = parsedTokenAccount.value.find(
+          (t) =>
+            t.account.data?.parsed?.info?.tokenAmount?.uiAmount >=
+            Number(token2022PaymentGuard.amount)
+        )
+
+        if (!filteredTokenAccount) {
+          throw new Error("Insufficient Balance")
+        }
+      } catch (e) {
+        console.log(e)
         toast({
           title: "Insufficient Balance",
           description: `You need at least ${token2022PaymentGuard.amount} ${
-            meta?.name || "token"
+            meta?.name || `${shortenKey(tokenMint)} token`
           } to mint this NFT.`,
           duration: 5000,
         })

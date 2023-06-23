@@ -2,6 +2,7 @@ import {
   DefaultGuardSet,
   GuardSet,
 } from "@metaplex-foundation/mpl-candy-machine"
+import { PublicKey } from "@solana/web3.js"
 import { clsx, type ClassValue } from "clsx"
 import { twMerge } from "tailwind-merge"
 
@@ -65,4 +66,32 @@ export function getRemainingTime(targetDate: BigInt) {
       seconds,
     }
   }
+}
+
+export function shortenKey(
+  key: PublicKey | string,
+  startLength: number = 4,
+  endLength: number = 4
+): string {
+  let keyString: string
+
+  // Check if the key is PublicKey or string
+  if (key instanceof PublicKey) {
+    keyString = key.toString()
+  } else if (typeof key === "string") {
+    keyString = key
+  } else {
+    throw new Error("Invalid type for key. Expected PublicKey or string.")
+  }
+
+  // Check if the startLength and endLength are too large for the string
+  if (startLength + endLength > keyString.length) {
+    throw new Error("startLength and endLength combined exceed key length.")
+  }
+
+  return (
+    keyString.substr(0, startLength) +
+    "..." +
+    keyString.substr(keyString.length - endLength)
+  )
 }
