@@ -95,3 +95,23 @@ export function shortenKey(
     keyString.substr(keyString.length - endLength)
   )
 }
+
+export function getExplorerUrl(
+  txid: string,
+  type: "tx" | "address"
+): string {
+  let url = "https://explorer.solana.com" || process.env.NEXT_PUBLIC_EXPLORER_URL
+  const cluster = process.env.NEXT_PUBLIC_ENV ? process.env.NEXT_PUBLIC_ENV : "devnet"
+  let queryParam = ""
+  if (cluster !== "mainnet-beta") {
+    queryParam = `?cluster=${cluster}`
+  }
+
+  if (type === "tx") {
+    return `${url}/tx/${txid}${queryParam}`
+  } else if (type === "address") {
+    return `${url}/address/${txid}${queryParam}`
+  } else {
+    throw new Error("Invalid type for getExplorerUrl")
+  }
+}

@@ -33,6 +33,8 @@ import { useUmi } from "@/hooks/useUmi"
 import { Button } from "@/components/ui/button"
 
 import { useToast } from "./use-toast"
+import { ToastAction } from "@radix-ui/react-toast"
+import { getExplorerUrl } from "@/lib/utils"
 
 type MintButtonProps = React.ComponentProps<typeof Button> & {
   group?: string
@@ -255,12 +257,17 @@ export function MintButton({
       )
       onMintCallback &&
         onMintCallback(nft, base58.deserialize(signature).toString())
-      if (nft) {
-        toast({
-          title: "Minted!",
-          description: `You minted ${nft?.metadata?.name}!`,
-        })
-      }
+        if (nft) {
+          toast({
+            title: "Minted!",
+            description: `You minted ${nft?.metadata?.name}!`,
+            action: (
+              <a href={getExplorerUrl(nftSigner.publicKey, "address")}>
+                <ToastAction altText="View NFT">View</ToastAction>
+              </a>
+            )
+          })
+        }
     } catch (err: any) {
       console.error(err)
     } finally {
