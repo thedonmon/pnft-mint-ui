@@ -33,6 +33,8 @@ import { useUmi } from "@/hooks/useUmi"
 import { Button } from "@/components/ui/button"
 
 import { useToast } from "./use-toast"
+import { getExplorerUrl } from "@/lib/utils"
+import { ToastAction } from "@radix-ui/react-toast"
 
 type MintButtonProps = React.ComponentProps<typeof Button> & {
   group?: string
@@ -259,6 +261,11 @@ export function MintButton({
         toast({
           title: "Minted!",
           description: `You minted ${nft?.metadata?.name}!`,
+          action: (
+            <a href={getExplorerUrl(nftSigner.publicKey, "address")}>
+              <ToastAction altText="View NFT">View</ToastAction>
+            </a>
+          )
         })
       }
     } catch (err: any) {

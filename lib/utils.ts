@@ -95,3 +95,50 @@ export function shortenKey(
     keyString.substr(keyString.length - endLength)
   )
 }
+
+export function getExplorerUrl(
+  txid: string,
+  type: "tx" | "address"
+): string {
+  let url = "https://explorer.solana.com" || process.env.NEXT_PUBLIC_EXPLORER_URL
+  const cluster = process.env.NEXT_PUBLIC_ENV ? process.env.NEXT_PUBLIC_ENV : "devnet"
+  let queryParam = ""
+  if (cluster !== "mainnet-beta") {
+    queryParam = `?cluster=${cluster}`
+  }
+
+  if (type === "tx") {
+    return `${url}/tx/${txid}${queryParam}`
+  } else if (type === "address") {
+    return `${url}/address/${txid}${queryParam}`
+  } else {
+    throw new Error("Invalid type for getExplorerUrl")
+  }
+}
+
+export function formatCamelCase(str: string): string {
+  const result = str.replace(/([A-Z])/g, " $1");
+  return result.charAt(0).toUpperCase() + result.slice(1);
+}
+
+export function unixTimestampToUTCDate(unixTimestamp: number): string {
+  const date = new Date(unixTimestamp * 1000); // Convert to milliseconds
+
+  // Create an array with date components
+  const dateComponents = [
+    ('0' + date.getUTCDate()).slice(-2), // Day
+    ('0' + (date.getUTCMonth() + 1)).slice(-2), // Month
+    date.getUTCFullYear(), // Year
+  ];
+
+  // Create an array with time components
+  const timeComponents = [
+    ('0' + date.getUTCHours()).slice(-2), // Hours
+    ('0' + date.getUTCMinutes()).slice(-2), // Minutes
+    ('0' + date.getUTCSeconds()).slice(-2), // Seconds
+  ];
+
+  // Join date and time components together and return
+  return dateComponents.join('/') + ' ' + timeComponents.join(':');
+}
+
